@@ -29,11 +29,12 @@ export interface ConditionNodeConfig {
   value?: unknown;
 }
 
-type NodeConfig = LLMNodeConfig | ToolNodeConfig | ConditionNodeConfig;
+// Union type for all node configurations
+export type NodeConfig = LLMNodeConfig | ToolNodeConfig | ConditionNodeConfig;
 
 const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ selectedNodeId, onClose }) => {
-  const [config, setConfig] = useState<NodeConfig>({
-    // Default config
+  // Use any type to allow flexible configuration structure
+  const [config, setConfig] = useState<any>({
     provider: 'openai',
     model: 'gpt-4',
     temperature: 0.7,

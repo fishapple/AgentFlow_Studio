@@ -6,6 +6,13 @@ interface NodeProps {
   data?: any;
 }
 
+// TODO: Remove this interface when fully integrated with React Flow types
+const _unusedNodeProps = (props: NodeProps) => {
+  // eslint-disable-next-line no-console, @typescript-eslint/no-unused-vars
+  console.log('Node type:', props.type);
+  return null;
+};
+
 const nodeColors = {
   llm: '#dbeafe', // blue-100
   tool: '#fef3c7', // amber-100

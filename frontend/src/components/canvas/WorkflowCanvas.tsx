@@ -387,20 +387,21 @@ const WorkflowCanvas: React.FC = () => {
         />
 
         {/* Connection Helper - Shows when dragging from source */}
-        <div 
-          className="connection-helper"
-          style={{
-            position: 'absolute' as const,
-            top: '-24px',
-            left: 0,
-            width: '100%',
-            textAlign: 'center' as const,
-            fontSize: '13px',
-            fontWeight: '500',
-            color: '#dc2626',
-            pointerEvents: 'none' as const,
-          }}
-        >
+        {nodes.some(n => n.selected) && (
+          <div 
+            className="connection-helper"
+            style={{
+              position: 'absolute' as const,
+              top: '-24px',
+              left: 0,
+              width: '100%',
+              textAlign: 'center' as const,
+              fontSize: '13px',
+              fontWeight: '500',
+              color: '#dc2626',
+              pointerEvents: 'none' as const,
+            }}
+          >
             🎯 Click on a target node to connect!
           </div>
         )}
