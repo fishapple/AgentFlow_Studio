@@ -3,9 +3,7 @@ import React from 'react';
 interface NodeProps {
   id: string;
   type: 'llm' | 'tool' | 'condition' | 'parallel' | 'human';
-  x: number;
-  y: number;
-  config?: any;
+  data?: any;
 }
 
 const nodeColors = {
@@ -24,14 +22,14 @@ const nodeIcons = {
   human: '👤 Human Input',
 };
 
-const Node: React.FC<NodeProps> = ({ id, type, x, y }) => {
+const Node: React.FC<{ type: 'llm' | 'tool' | 'condition' | 'parallel' | 'human'; }> = ({ type }) => {
   return (
     <div 
       className="workflow-node"
       style={{
         position: 'absolute' as const,
-        left: `${x}px`,
-        top: `${y}px`,
+        left: '50%',
+        top: '50%',
         width: 200,
         backgroundColor: nodeColors[type],
         borderLeft: `4px solid ${getBorderColor(type)}`,
@@ -147,15 +145,15 @@ const Node: React.FC<NodeProps> = ({ id, type, x, y }) => {
   );
 };
 
-const getBorderColor = (type: string) => {
+const getBorderColor = (type: string): string => {
   const colors = {
     llm: '#3b82f6', // blue-500
     tool: '#d97706', // amber-600
     condition: '#16a34a', // green-600
-    parallel: '#c026d3', // fuchsia-600
-    human: '#dc2626', // red-600,
+    parallel: '#c026d3',  // fuchsia-600
+    human: '#dc2626',   // red-600,
   };
-  return colors[type];
+  return colors[type as keyof typeof colors];
 };
 
 export default Node;

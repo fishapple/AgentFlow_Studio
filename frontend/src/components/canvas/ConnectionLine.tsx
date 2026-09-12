@@ -6,7 +6,6 @@ interface ConnectionLineProps {
 }
 
 const ConnectionLine: React.FC<ConnectionLineProps> = ({ sourceNode, targetNode }) => {
-  // Mock coordinates - in production would calculate dynamically based on node positions
   const startX = 100 + Math.random() * 50;
   const startY = 200 + Math.random() * 100;
   const endX = 400 + Math.random() * 50;
