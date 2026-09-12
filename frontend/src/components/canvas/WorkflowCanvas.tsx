@@ -50,11 +50,11 @@ const WorkflowCanvas: React.FC = () => {
     },
   ]);
 
-  const [connections] = useState<(sourceNode: string; targetNode: string)[]>([
-    ['node-1', 'node-2'],
-    ['node-1', 'node-3'],
-    ['node-2', 'node-4'],
-    ['node-3', 'node-5'],
+  const [connections] = useState<{ sourceNode: string; targetNode: string }[]>([
+    { sourceNode: 'node-1', targetNode: 'node-2' },
+    { sourceNode: 'node-1', targetNode: 'node-3' },
+    { sourceNode: 'node-2', targetNode: 'node-4' },
+    { sourceNode: 'node-3', targetNode: 'node-5' },
   ]);
 
   return (

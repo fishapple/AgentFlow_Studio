@@ -31,8 +31,8 @@ export interface NodeConfig {
   name: string;
   description?: string;
   
-  // Type-specific configurations
-  [key: string]: any;
+  // Type-specific configurations (using Record for flexibility)
+  [key: string]: unknown;
 }
 
 // LLM Node Configuration
@@ -61,7 +61,7 @@ export interface ConditionNodeConfig extends NodeConfig {
   conditionType: 'if' | 'unless' | 'switch';
   variableName?: string;
   operator?: '=' | '!=' | '>' | '<' | '>=' | '<=';
-  value?: any;
+  value?: unknown;
 }
 
 // Parallel Node Configuration
@@ -124,8 +124,8 @@ export interface ExecutionRecord {
   triggerType: 'api' | 'schedule' | 'webhook';
   
   // Input/Output data
-  inputData?: Record<string, any>;
-  outputData?: Record<string, any>;
+  inputData?: Record<string, unknown>;
+  outputData?: Record<string, unknown>;
   
   // Status tracking
   status: ExecutionStatus;
@@ -185,7 +185,7 @@ export interface PluginDefinition {
   
   metadata: {
     dependencies?: string[];
-    configurationSchema?: any;
+    configurationSchema?: object;
     documentationUrl?: string;
   };
 }
@@ -198,7 +198,7 @@ export interface ToolDefinition {
     name: string;
     type: string;
     required: boolean;
-    default?: any;
+    default?: unknown;
   }>;
   
   // Async function that performs the tool operation

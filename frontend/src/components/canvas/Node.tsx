@@ -83,7 +83,7 @@ const Node: React.FC<NodeProps> = ({ id, type, x, y }) => {
         )}
         {type === 'condition' && (
           <div>
-            <p><strong>Condition:</strong> If temperature > 30°C</p>
+            <p><strong>Condition:</strong> If temperature &gt; 30°C</p>
             <p><strong>Else:</strong> Else branch</p>
           </div>
         )}

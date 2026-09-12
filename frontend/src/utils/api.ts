@@ -124,7 +124,7 @@ export const workflowAPI = {
   /**
    * Create workflow version (Git-style)
    */
-  createVersion: (workflowId: string, name: string, definition: any) => 
+  createVersion: (workflowId: string, name: string, definition: Record<string, unknown>) => 
     apiClient.post(`/workflows/${workflowId}/versions`, { name, definition }),
 
   /**
@@ -149,7 +149,7 @@ export const executionAPI = {
   /**
    * Trigger workflow execution
    */
-  trigger: (workflowId: string, inputData?: object) => 
+  trigger: (workflowId: string, inputData?: Record<string, unknown>) => 
     apiClient.post('/executions', { workflowId, inputData }),
 
   /**
@@ -213,7 +213,7 @@ export const pluginAPI = {
   /**
    * Register custom node type for plugin
    */
-  registerNode: (pluginId: string, nodeDefinition: any) => 
+  registerNode: (pluginId: string, nodeDefinition: Record<string, unknown>) => 
     apiClient.post(`/plugins/${pluginId}/nodes`, { nodeDefinition }),
 };
 
