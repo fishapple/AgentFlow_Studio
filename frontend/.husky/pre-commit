@@ -1,0 +1,4 @@
+#!/bin/sh
+. "$(dirname "$0")/lib/exec-lint.sh"
+
+npx lint-staged

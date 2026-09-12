@@ -1,0 +1,18 @@
+name: Star Notification
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.issue.state == 'open' }}
+    
+    steps:
+      - name: Notify community
+        run: |
+          echo "New issue detected in AgentFlow Studio!"
+          # TODO: Send notification to Discord/Slack
