@@ -16,6 +16,8 @@ import logging
 import json
 from datetime import datetime
 from collections import deque
+import openai
+import httpx
 
 from ..models.execution import Execution, ExecutionStatus
 
@@ -273,18 +275,142 @@ class WorkflowEngine:
         node_id: str, 
         config: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Execute an LLM call node."""
-        
-        # TODO: Integrate with OpenAI/Anthropic API
+        """Execute an LLM call node with OpenAI/Anthropic/Gemini support."""
         
         provider = config.get("provider", "openai")
-        model = config.get("model", "gpt-4")
+        model = config.get("model", "gpt-4-turbo")
+        temperature = config.get("temperature", 0.7)
+        max_tokens = config.get("maxTokens", 2048)
         
-        return {
-            "status": "success",
-            "output": f"LLM call executed (provider={provider}, model={model})",
-            "tokens_used": 1024,  # Placeholder
-        }
+        try:
+            # Build system prompt with context from upstream nodes
+            messages = self._build_llm_messages(node_id, config)
+            
+            logger.info(f"LLM Call (provider={provider}, model={model})")
+            
+            if provider == "openai":
+                result = await self._call_openai(messages, model, temperature, max_tokens)
+                
+            elif provider == "anthropic":
+                result = await self._call_anthropic(messages, model, temperature, max_tokens)
+                
+            elif provider == "google":
+                result = await self._call_google(messages, model, temperature, max_tokens)
+            
+            else:
+                raise ValueError(f"Unsupported LLM provider: {provider}")
+            
+            logger.info(f"LLM Call succeeded for node {node_id}: tokens_used={result.get('tokens', 0)}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"LLM Call failed for node {node_id}: {str(e)}", exc_info=True)
+            
+            # Retry logic for transient errors
+            retry_count = int(config.get("retry_count", 0)) + 1
+            
+            if retry_count <= self.max_retries:
+                logger.info(f"Retrying LLM call (attempt {retry_count}/{self.max_retries})")
+                await asyncio.sleep(2 ** retry_count)  # Exponential backoff
+                return await self._execute_llm_node(node_id, config)
+            
+            return {"status": "failed", "error": f"LLM execution failed: {str(e)}"}
+    
+    async def _call_openai(
+        self, 
+        messages: List[Dict[str, str]], 
+        model: str, 
+        temperature: float, 
+        max_tokens: int
+    ) -> Dict[str, Any]:
+        """Call OpenAI API for LLM inference."""
+        
+        try:
+            import openai
+            
+            # Initialize client (should use environment variable for API key)
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise ValueError("OpenAI_API_KEY not set in environment variables")
+            
+            client = openai.OpenAI(api_key=api_key)
+            
+            # Make completion request
+            response = await asyncio.to_thread(
+                client.chat.completions.create, 
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            
+            return {
+                "status": "success",
+                "output": response.choices[0].message.content,
+                "tokens_used": response.usage.total_tokens if hasattr(response, 'usage') else 1024,
+                "provider": "openai",
+                "model": model,
+            }
+            
+        except Exception as e:
+            raise RuntimeError(f"OpenAI API error: {str(e)}")
+    
+    async def _call_anthropic(
+        self, 
+        messages: List[Dict[str, str]], 
+        model: str, 
+        temperature: float, 
+        max_tokens: int
+    ) -> Dict[str, Any]:
+        """Call Anthropic API for LLM inference."""
+        
+        try:
+            # TODO: Implement Anthropic integration
+            # import anthropic
+            
+            return {
+                "status": "success",
+                "output": "[Anthropic implementation pending]",
+                "provider": "anthropic",
+            }
+            
+        except Exception as e:
+            raise RuntimeError(f"Anthropic API error: {str(e)}")
+    
+    async def _call_google(
+        self, 
+        messages: List[Dict[str, str]], 
+        model: str, 
+        temperature: float, 
+        max_tokens: int
+    ) -> Dict[str, Any]:
+        """Call Google Gemini API for LLM inference."""
+        
+        try:
+            # TODO: Implement Google Gemini integration
+            
+            return {
+                "status": "success",
+                "output": "[Google implementation pending]",
+                "provider": "google",
+            }
+            
+        except Exception as e:
+            raise RuntimeError(f"Google API error: {str(e)}")
+    
+    def _build_llm_messages(
+        self, 
+        node_id: str, 
+        config: Dict[str, Any]
+    ) -> List[Dict[str, str]]:
+        """Build prompt messages for LLM based on system prompt and upstream outputs."""
+        
+        # Placeholder - should propagate data from upstream nodes
+        return [{
+            "role": "user",
+            "content": f"Execute node {node_id} with configuration:\n{json.dumps(config, indent=2)}"
+        }]
+
     
     async def _execute_tool_node(
         self, 

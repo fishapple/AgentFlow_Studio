@@ -28,12 +28,24 @@
 
 ## 🎯 核心特性
 
-### 🖱️ **可视化工作流编排**
-- ✅ 拖拽式画布，10 分钟构建第一个 AI Agent
-- ✅ 支持 LLM、工具调用、条件分支、并行执行等多种节点类型
-- ✅ 实时预览和调试功能
+### 🖱️ **可视化工作流编排** (Week 3 MVP)
+- ✅ **React Flow Canvas**: 专业级画布，支持无限缩放和平移
+- ✅ **拖拽式节点**: LLM、Tool Call、Condition、Parallel、Human Input 5 种类型
+- ✅ **连线交互**: Bezier 曲线连接，可视化数据流传递
+- ✅ **属性面板**: 实时编辑每个节点的配置参数
 
-### 🔧 **企业级集成能力**
+### 🔌 **LLM/Tool 节点集成** (Week 4-5)
+- ⚡️ **OpenAI API Integration**: 
+  - GPT-4/GPT-3.5 Turbo 支持
+  - Temperature/MaxTokens 可调
+  - System Prompt 配置
+  
+- 🔧 **HTTP Tool Nodes**:
+  - RESTful API 调用 (GET/POST/PUT/DELETE)
+  - Headers/Body 自定义
+  - URL 变量绑定机制
+  
+### 📦 **企业级功能** (Week 6+)
 - ✅ Git 版本控制（类似 GitHub Pull Request 的工作流审批）
 - ✅ CI/CD Pipeline 自动部署
 - ✅ API 网关 + OpenAPI/Swagger 文档自动生成
@@ -160,6 +172,12 @@ python main.py
 ### 技术栈详情
 
 | 层级 | 技术选型 | 说明 |
+|------|----------|------|
+| Frontend | React + TypeScript + Vite | 高性能单页应用 |
+| Canvas | React Flow v11.x | 专业级流程图编辑器 |
+| Backend | FastAPI (Python) | 异步高性能 API 框架 |
+| Database | PostgreSQL + JSONB | 结构化存储 + 灵活扩展 |
+| Cache/Queue | Redis | 缓存和任务队列 |
 |------|---------|------|
 | **前端框架** | React 18 + TypeScript + Vite | 高性能、类型安全 |
 | **状态管理** | Zustand | 轻量级，适合中大型应用 |
