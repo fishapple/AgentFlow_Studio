@@ -18,8 +18,10 @@ from datetime import datetime
 from collections import deque
 import openai
 import httpx
+import os
 
-from ..models.execution import Execution, ExecutionStatus
+# Use absolute imports to avoid relative import issues
+from models.execution import Execution, ExecutionStatus
 
 
 logger = logging.getLogger(__name__)
@@ -417,17 +419,157 @@ class WorkflowEngine:
         node_id: str, 
         config: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Execute a tool/HTTP request node."""
+        """Execute a tool/HTTP request node with full REST API support."""
         
-        # TODO: Implement HTTP client for tool nodes
+        try:
+            http_method = config.get("httpMethod", "POST")
+            
+            if not http_method.upper() in ['GET', 'POST', 'PUT', 'DELETE']:
+                raise ValueError(f"Invalid HTTP method: {http_method}")
+            
+            tool_name = config.get("toolName", "unknown-tool")
+            url = config.get("url", "")
+            
+            # Build request headers with authentication
+            headers = self._build_request_headers(config)
+            
+            # Prepare request body for POST/PUT requests
+            if http_method.upper() in ['POST', 'PUT']:
+                body = config.get("body", {})
+                logger.info(f"HTTP Request ({http_method}): {tool_name}")
+                
+                # Make HTTP request using async client
+                response = await self._make_http_request(
+                    url, 
+                    http_method.upper(), 
+                    headers, 
+                    body if body else None
+                )
+                
+                return {
+                    "status": "success",
+                    "output": response.text[:500] + (f"... ({len(response.text)} bytes total)" if len(response.text) > 500 else ""),
+                    "http_response_code": response.status_code,
+                    "headers": dict(response.headers),
+                    "provider": "rest-api",
+                }
+            
+            elif http_method.upper() == 'GET':
+                # GET requests don't have body
+                logger.info(f"HTTP GET Request: {tool_name}")
+                
+                response = await self._make_http_request(url, 'GET', headers, None)
+                
+                return {
+                    "status": "success",
+                    "output": f"{response.status_code} - {response.text[:200]}",
+                    "http_response_code": response.status_code,
+                    "headers": dict(response.headers),
+                    "provider": "rest-api",
+                }
+            
+            elif http_method.upper() == 'DELETE':
+                logger.info(f"HTTP DELETE Request: {tool_name}")
+                
+                response = await self._make_http_request(url, 'DELETE', headers, None)
+                
+                return {
+                    "status": "success", 
+                    "output": f"{response.status_code} - Resource deleted",
+                    "http_response_code": response.status_code,
+                    "headers": dict(response.headers),
+                    "provider": "rest-api",
+                }
+            
+        except Exception as e:
+            logger.error(f"Tool execution failed for node {node_id}: {str(e)}")
+            
+            # Retry logic for transient errors (network issues)
+            retry_count = int(config.get("retry_count", 0)) + 1
+            
+            if retry_count <= self.max_retries:
+                logger.info(f"Retrying tool call (attempt {retry_count}/{self.max_retries})")
+                await asyncio.sleep(2 ** retry_count)  # Exponential backoff
+                return await self._execute_tool_node(node_id, config)
+            
+            return {"status": "failed", "error": f"Tool execution failed: {str(e)}"}
+
+    def _build_request_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
+        """Build request headers including authentication tokens."""
         
-        tool_name = config.get("toolName", "unknown")
-        
-        return {
-            "status": "success",
-            "output": f"Tool executed: {tool_name}",
-            "http_response_code": 200,
+        headers = {
+            'Content-Type': 'application/json',
+            # Add Accept header based on expected response type
+            'Accept': 'application/json' if config.get("httpMethod") != 'GET' else '*/*',
         }
+        
+        # Add Authorization from environment variables or config
+        auth_type = config.get("authType", "none")  # 'bearer' | 'basic' | 'apikey'
+        
+        if auth_type == "bearer":
+            token = os.getenv("API_BEARER_TOKEN") or config.get("bearerToken", "")
+            headers['Authorization'] = f"Bearer {token}"
+            
+        elif auth_type == "apikey":
+            api_key = config.get("apiKey", "")
+            headers['X-API-Key'] = api_key
+            
+        # Merge with custom headers from user config
+        if config.get("headers"):
+            for key, value in config["headers"].items():
+                headers[key] = str(value)
+        
+        return headers
+
+    async def _make_http_request(
+        self, 
+        url: str, 
+        method: str, 
+        headers: Dict[str, str], 
+        body: Optional[Dict[str, Any]] = None
+    ) -> httpx.Response:
+        """Make an HTTP request using the httpx async client."""
+        
+        try:
+            # Create async HTTP client with connection pooling
+            if not hasattr(self, '_http_client'):
+                self._http_client = httpx.AsyncClient(
+                    timeout=30.0,  # 30 second timeout for API calls
+                    follow_redirects=True,
+                    limits=httpx.Limits(
+                        max_connections=100,
+                        max_keepalive_connections=20,
+                    )
+                )
+            
+            client = self._http_client
+            
+            # Build request based on method
+            if body:
+                response = await client.request(method, url, json=body, headers=headers)
+            else:
+                response = await client.request(method, url, headers=headers)
+            
+            # Check for HTTP errors (4xx or 5xx)
+            if response.status_code >= 400:
+                error_msg = f"HTTP {response.status_code}: {response.text[:200]}"
+                raise RuntimeError(error_msg)
+            
+            return response
+            
+        except httpx.TimeoutException:
+            raise RuntimeError(f"Request timeout to {url}")
+        except httpx.HTTPError as e:
+            raise RuntimeError(f"HTTP error for {url}: {str(e)}")
+
+    async def _execute_http_tool_node(
+        self, 
+        node_id: str, 
+        config: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Wrapper function to execute HTTP tool nodes."""
+        return await self._execute_tool_node(node_id, config)
+
     
     def _propagate_outputs(self, node_id: str, output_data: Any):
         """Propagate output data to dependent nodes."""
