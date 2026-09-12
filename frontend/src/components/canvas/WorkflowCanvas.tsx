@@ -10,7 +10,10 @@ import ReactFlow, {
   Edge,
 } from 'reactflow';
 
-const WorkflowCanvas: React.FC = () => {
+const WorkflowCanvas: React.FC<{
+  onNodeClick?: (nodeId: string) => void;
+  selectedNodeId?: string | null;
+}> = ({ onNodeClick, _selectedNodeId }) => {
   const [nodes, setNodes] = useNodesState([
     // LLM Call Node
     {

@@ -6,10 +6,8 @@ interface NodeProps {
   data?: any;
 }
 
-// TODO: Remove this interface when fully integrated with React Flow types
-const _unusedNodeProps = (props: NodeProps) => {
-  // eslint-disable-next-line no-console, @typescript-eslint/no-unused-vars
-  console.log('Node type:', props.type);
+// Suppress unused variable warning - this is a placeholder for future integration
+const _unusedNodeProps: (props: NodeProps) => void = (_props) => {
   return null;
 };
 
