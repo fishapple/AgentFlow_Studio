@@ -419,7 +419,10 @@ class WorkflowEngine:
         node_id: str, 
         config: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Execute a tool/HTTP request node with full REST API support."""
+        """Execute a tool/HTTP request node with full REST API support.
+        
+        Supports variable binding from previous nodes via 'previousNodeId' reference.
+        """
         
         try:
             http_method = config.get("httpMethod", "POST")
@@ -430,6 +433,21 @@ class WorkflowEngine:
             tool_name = config.get("toolName", "unknown-tool")
             url = config.get("url", "")
             
+            # Variable binding: merge data from previous node outputs
+            if 'previousNodeId' in config and config['previousNodeId'] in self.executed_outputs:
+                prev_node_id = config['previousNodeId']
+                prev_output = self.executed_outputs[prev_node_id]
+                
+                logger.info(f"Binding variables from {prev_node_id} to {node_id}")
+                
+                # Merge previous output into current config for URL/body substitution
+                if 'body' in config and isinstance(config['body'], dict):
+                    merged_body = {**prev_output, **config['body']}
+                    config['body'] = merged_body
+                
+                if 'url' in config:
+                    url = self._apply_variable_substitution(url, prev_output)
+
             # Build request headers with authentication
             headers = self._build_request_headers(config)
             
@@ -493,6 +511,34 @@ class WorkflowEngine:
                 return await self._execute_tool_node(node_id, config)
             
             return {"status": "failed", "error": f"Tool execution failed: {str(e)}"}
+
+    def _apply_variable_substitution(
+        self, 
+        template: str, 
+        variables: Dict[str, Any]
+    ) -> str:
+        """Apply variable substitution in URL templates.
+        
+        Supports patterns like {{variable}} or ${variable}.
+        Returns the substituted string or original if no variables found.
+        """
+        
+        import re
+        
+        def replace_var(match):
+            var_name = match.group(1) or match.group(2)
+            value = str(variables.get(var_name, ''))
+            return value
+        
+        # Match both {{var}} and ${var} patterns
+        pattern = r'\{\{(\w+)\}\}|\\$\{(\w+)\}'
+        
+        try:
+            result = re.sub(pattern, replace_var, template)
+            return result if result != template else template
+        except Exception as e:
+            logger.warning(f"Variable substitution failed: {e}")
+            return template
 
     def _build_request_headers(self, config: Dict[str, Any]) -> Dict[str, str]:
         """Build request headers including authentication tokens."""
